@@ -1,6 +1,7 @@
 
 import numpy as np
 import scipy.signal as ss
+import scipy.io.wavfile as wv
 from matplotlib import pyplot as plt
 import wave
 from time import sleep
@@ -13,8 +14,18 @@ BUFFER_SIZE = 1024
 SAMPLE_RATE = 48000
 EMPTY_SIGNAL = np.array([])
 
+
+def find_latency(in1, in2, max_l):
+    MAX_S_L = max_l * SAMPLE_RATE
+    corr_arr = []
+    # for i in range(0, MAX_S_L):
+    #     corr_arr.append(ss.correlate(in1, in2))
+    return ss.correlate(in1, in2, 'full', 'fft')#max(corr_arr)
+
 def read_wave(filename):
-    return True
+    # with wave.open(filename, "rb") as wf:
+    return wv.read(filename)
+
 
 def write_wave_mono(file_path, signal):
     """
@@ -42,6 +53,9 @@ def write_wave_mono(file_path, signal):
 
 def convert_float_to_int16(ar):
     return (ar * np.iinfo(np.int16).max).astype(np.int16)
+
+def convert_int16_to_float(ar):
+    return (ar / np.iinfo(np.int16).max).astype(np.float64)
 
 def write_wave_12ch(file_path, signal_12):
     """
@@ -208,7 +222,27 @@ def play_and_record(file_path, output_file, duration=1):
         wf_out.writeframes(b"".join(frames))
 
 if __name__ == "__main__":
-    ts = make_test_signal_12channel("burst", 1)
+    # ts = make_test_signal_12channel("burst", 1)
     # play_and_record("sweep_channel_2.wav", "input.wav", duration=5)
-    write_wave_12ch("12ch.wav", ts)
+    # write_wave_12ch("12ch.wav", ts)
+    # signal = sg.add_signal(EMPTY_SIGNAL, sg.create_silence(0))
+    # signal = sg.add_signal(signal, sg.create_sweep(200, 1600, 3, 'lin'))
+    # signal = sg.add_signal(signal, sg.create_silence(1))
+    # write_wave_mono('corr_test2.wav', signal)
+
+
+
+    arr1 = read_wave('corr_test1.wav')[1]
+    arr2 = read_wave('corr_test2.wav')[1]
+    sig1 = np.take(arr1, 0, axis=1)
+    sig2 = np.take(arr2, 0, axis=1)
+    print(np.take(arr2, 1, axis=1) == np.take(arr2, 0, axis=1))
+    # arr1 = sg.add_signal(sg.create_silence(0.3), sg.create_sweep(100, 200, 0.1, "log"))
+    # arr1 = sg.add_signal(arr1, sg.create_silence(0.1))
+    # arr2 = sg.add_signal(sg.create_silence(0.1), sg.create_sweep(100, 200, 0.1, "log"))
+    # arr2 = sg.add_signal(arr2, sg.create_silence(0.1))
+    print(sig1.ndim, sig2.ndim, sig2.shape, sig1.shape)
+    arr_c = ss.correlate(sig1, sig2, 'valid', 'fft')
+    print(arr_c.argmax(), arr_c.max())
+    plot_signals([sig1, sig2, arr_c])
     
